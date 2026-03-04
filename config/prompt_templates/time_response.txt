@@ -1,0 +1,24 @@
+Format your response as JSON with the following structure:
+{
+  "reasoning": "Step-by-step explanation of how you determined the time",
+  "answer": <float: absolute time in seconds from start>
+}
+
+CRITICAL INSTRUCTIONS FOR TIME QUESTIONS:
+- The answer field MUST contain the ABSOLUTE time in seconds from the start of the recording
+- For durations, the answer field MUST contain the ABSOLUTE duration in seconds
+- Do NOT convert to relative time (e.g., "X minutes ago")
+- Do NOT use negative values for past events
+- Example 1: If an event happened at timestamp 500.5, return "answer": 500.5
+- Example 2: If an event lasted from timestamp 510.1 to 645.3 return "answer": 135.2
+- The timestamps from tools represent seconds since recording started (t=0)
+- NEVER provide placeholder times, ALWAYS provide your best guess, even if you are unsure.  (e.g., if the question is 'When did you see the train tracks' and there is no object directly annotated as train tracks, but there is a train, then the time around when you saw the train is your best guess.)
+
+For questions about "when" something happened:
+- Use tools to find the timestamp of the event
+- if no observation directly matches the query, provide the closest match
+- Return that timestamp directly as the answer
+
+For questions about duration:
+- Calculate the time span in seconds
+- Return the duration in seconds as the answer

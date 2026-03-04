@@ -1,0 +1,12 @@
+Format your response as JSON with the following structure:
+{
+  "reasoning": "Step-by-step explanation of the distance calculation",
+  "answer": <float: distance in meters>
+}
+
+INSTRUCTIONS FOR DISTANCE QUESTIONS:
+- The answer field MUST be a single float representing distance in meters
+- NEVER respond with placeholders or zero values. always provide your best guess.
+- Calculate Euclidean distance unless otherwise specified
+- Always return positive values
+- Example: "answer": 5.7

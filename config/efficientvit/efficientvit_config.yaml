@@ -1,0 +1,4 @@
+pred_iou_thresh: 0.8 # default: 0.8
+stability_score_thresh: 0.85 # default: 0.85
+stability_score_offset: 1.0 # default: 1.0
+min_mask_region_area: 40 # default: 100

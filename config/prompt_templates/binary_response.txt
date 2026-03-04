@@ -1,0 +1,12 @@
+Format your response as JSON with the following structure:
+{
+  "reasoning": "Step-by-step explanation of how you determined the answer",
+  "answer": "yes" or "no"
+}
+
+INSTRUCTIONS FOR BINARY (YES/NO) QUESTIONS:
+- The answer field MUST be exactly "yes" or "no" (lowercase)
+- Do NOT use: Yes, No, YES, NO, true, false, 1, 0, or any other format
+- Use the tools to gather evidence about 
+- If uncertain, reason about the overall scene and give a probable answer. (e.g., if the question is 'Did you see airplanes' and you don't find an object directly labeled as 'airplane', but your evidence suggests you are at an airport, then the most likely answer might be 'yes')
+- Example: "answer": "yes"

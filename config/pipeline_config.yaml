@@ -1,0 +1,73 @@
+# MMLLM Grounded SAM Pipeline Configuration
+
+segmentation:
+  model_name: "fastsam/FastSAM-x-640x480.engine"
+  model_config_path: "fastsam/fastsam_config.yaml"
+  device: "cuda"
+  min_mask_region_area: 300  # Minimum mask area in pixels to filter out small regions
+  polygon_epsilon_factor: 0.001  # Polygon approximation factor (0=none, 0.001-0.01 typical)
+  imgsz: [480, 640]  # Uncomment for TensorRT models - format is [height, width] 
+
+tracking:
+  device: "cuda"
+  track_buffer: 30  # Frames to keep track alive after last detection
+  enable_temporal_history: true  # Enable temporal observation history tracking
+  reid_weights: "checkpoints/reid_weights/clip_general.engine"  # ReID model: clip_general.engine for general objects, osnet_x0_25_msmt17.pt for persons
+  with_reid: true  # Enable ReID features for track association
+  reid_half: false  # Use FP16 for ReID inference (CLIP models require FP32, set to true for osnet)
+
+grounding:
+  agent_model_name: "gpt-5-mini"
+  group_prompt_file: "config/prompt_templates/grounded_sam_prompt.txt"
+  query_interval_frames: 90
+  cuda_device: null  # null = inherit env. "0", "1", etc. to pin GPU for grounding workers.
+  enable_perframe_clip_features: false
+  clip_feature_interval_frames: 5
+  perframe_clip_model_name: "ViT-B-16"
+  perframe_clip_model_dataset: "openai"
+
+workers:
+  num_assignment_workers: 1
+  num_grounding_workers: 1
+  assignment_worker: "min_frames_max_size"  # Options: "min_frames"
+  grounding_worker: "dam_multi_image"  # Options: "dam_multi_image"
+  
+  # Assignment worker specific configuration
+  assignment_config:
+    min_obs_per_track: 8  # Minimum observations before track becomes eligible for prompting
+    N_masks_per_batch: 64  # Maximum masks per batch (for min_frames worker)
+    min_frame_margin_slack: 1 # min frames max size, slack to optimize for size
+    min_mask_region_area: 300  # Minimum mask region area in pixels
+    max_mask_region_area: 307200  # Maximum mask region area in pixels
+    position_score_weight: 0.5  # Weight for position score in optimization
+    size_score_weight: 0.5  # Weight for size score in optimization
+  
+  # DAM (Describe Anything Model) grounding worker configuration
+  dam_grounding_config:
+    dam_model_path: "nvidia/DAM-3B"
+    dam_conv_mode: "v1"
+    dam_prompt_mode: "focal_prompt"
+    multi_image_min_n_masks: 32  # Set to enable multi-image processing
+    sentence_embedding_model_name: "" # sentence-transformers/sentence-t5-large
+    compute_full_image_description: false
+    save_grounding_images: false  # Save images with masks for debugging
+    save_plain_grounding_images: false
+    save_object_images: false  # Save individual CLIP crops as semantic_id.jpg
+    enable_selectframe_clip_features: true
+    selectframe_clip_model_name: "ViT-L-14"
+    selectframe_clip_model_dataset: "openai"
+    selectframe_clip_backend: "openclip"  # "openclip" or "pe" (Perception Encoder)
+
+depth:
+  depth_lb: 0.25
+  depth_ub: 5.0
+
+scene_graph:
+  defer_dsg_processing: true  # Defer DSG processing until shutdown for performance
+  enable_background_objects: True  # Enable tracking of all objects including those filtered by Hydra
+
+# Top-level configuration
+semantic_config_path: "config/labels_pseudo.yaml"
+labelspace_colors_path: "config/labels_pseudo.csv"
+hierarchical_optimization: true
+output_dir: "output"

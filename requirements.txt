@@ -1,0 +1,37 @@
+boxmot @ git+https://github.com/nicogorlo/boxmot.git
+dam @ git+https://github.com/nicogorlo/describe-anything-batch.git
+perception_models @ git+https://github.com/facebookresearch/perception_models
+networkx == 3.1
+python-dotenv
+langchain
+langchain-openai
+langchain-anthropic
+langchain-google-genai
+langgraph
+matplotlib
+pydantic
+scikit-learn
+cvxpy
+scipy
+transformers
+httpx
+pyyaml
+openai
+anthropic>=0.77.0
+numpy==1.26.4
+zmq
+ultralytics
+segment_anything
+rclpy
+sam2
+open_clip_torch
+numba
+onnxscript
+tensorrt-cu12>=7.0.0,!=10.1.0
+onnxslim>=0.1.71
+onnxruntime-gpu
+tensorrt
+wheel
+rerun-sdk
+sentence_transformers==4.1.0
+transformers==4.55.4

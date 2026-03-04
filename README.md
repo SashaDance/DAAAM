@@ -1,4 +1,4 @@
-# Describe Anything, Anywhere, at Any Moment (DAAAM)
+# DAAAM — Describe Anything, Anywhere, at Any Moment
 
 [[arXiv](https://arxiv.org/abs/2512.00565)] [[Project Page](https://nicolasgorlo.com/DAAAM_25)]
 
@@ -6,20 +6,14 @@
   <img src="assets/Title_Figure_compressed.drawio.png" alt="DAAAM Overview"/>
 </p>
 
-## Overview
-
-DAAAM is a novel spatio-temporal memory framework for large-scale and real-time 4D scene understanding, building hierarchical 4D scene graphs with detailed natural language descriptions.
+Real-time foundation-model-first robot mapping: SAM segmentation + BotSort tracking + VLM grounding feed into [Hydra](https://github.com/MIT-SPARK/Hydra) to build 3D Dynamic Scene Graphs on the fly.
 
 Key contributions:
 - Novel optimization-based frontend for semantic descriptions from localized captioning models
 - Hierarchical 4D scene graph construction with real-time performance
 - State-of-the-art results on NaVQA and SG3D benchmarks
 
-> This work was supported by the ARL DCIST program and the ONR RAPID program.
-
-## Code
-
-Code coming soon.
+**[Installation](INSTALL.md) | [Running](RUNNING.md) | [Codebase](CODEBASE.md)**
 
 ## Paper
 
@@ -38,3 +32,5 @@ Nicolas Gorlo, Lukas Schmid, and Luca Carlone, "**Describe Anything, Anywhere, a
       url={https://arxiv.org/abs/2512.00565}
 }
 ```
+
+> This work was supported by the ARL DCIST program and the ONR RAPID program.

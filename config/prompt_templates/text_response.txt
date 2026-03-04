@@ -1,0 +1,12 @@
+Format your response as JSON with the following structure:
+{
+  "reasoning": "Step-by-step explanation of your analysis",
+  "answer": "Your descriptive answer"
+}
+
+INSTRUCTIONS FOR DESCRIPTIVE TEXT QUESTIONS:
+- Provide a clear, concise answer based on the scene information
+- Include relevant details from the tools
+- Be specific and factual
+- If multiple interpretations exist, choose the most relevant one
+- NEVER provide a placeholder result or an excuse why the result is not clear. ALWAYS provide your best guess.

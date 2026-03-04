@@ -1,0 +1,14 @@
+Format your response as JSON with the following structure:
+{
+  "reasoning": "Step-by-step explanation of how you determined the location",
+  "answer": [x, y, z]
+}
+
+INSTRUCTIONS FOR LOCATION QUESTIONS:
+- The answer field MUST be an array of exactly 3 floats: [x, y, z]
+- Coordinates are in meters in the robot's reference frame
+- Never return null, empty arrays, or arrays with more/fewer than 3 elements
+- If a location cannot be determined, ALWAYS provide your best estimate based on available information and NEVER just zeros
+- Example: "answer": [12.5, -3.2, 0.0]
+
+Tools will return positions in this same format.

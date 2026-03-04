@@ -1,0 +1,12 @@
+Analyze this spatial region:
+
+Region ID: {region_id}
+Total objects in region: {num_objects}
+Floor annotation: {traversable_floor}
+
+Semantically diverse objects sampled from the region (regular + background objects combined):
+{sampled_objects}
+
+Note: The objects listed above were selected to maximize semantic diversity across all objects in the region using their combined CLIP + sentence embedding features. The traversable floor annotation describes the type of ground surface in this region based on place node annotations.
+
+Provide your analysis of this region.

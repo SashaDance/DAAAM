@@ -1,0 +1,12 @@
+Format your response as JSON with the following structure:
+{
+  "reasoning": "Step-by-step explanation of the trajectory",
+  "answer": [[x1, y1, z1], [x2, y2, z2], ...]
+}
+
+INSTRUCTIONS FOR TRAJECTORY QUESTIONS:
+- The answer field MUST be a list of 3D points
+- Each point is [x, y, z] in meters
+- Points should be ordered sequentially along the path
+- Include enough points to represent the trajectory accurately
+- Example: "answer": [[0.0, 0.0, 0.0], [1.0, 0.5, 0.0], [2.0, 1.0, 0.0]]

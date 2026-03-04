@@ -1,0 +1,7 @@
+fastsam_conf: 0.3
+fastsam_iou: 0.5
+fastsam_retina_masks: True
+# Uncomment and set for TensorRT models (must match compiled engine size)
+# Note: imgsz format is [height, width] as expected by ultralytics
+# fastsam_imgsz: [1024, 1248]  # For CODa dataset with TensorRT (FastSAM-s-1024x1248.engine = 1248w×1024h)
+# fastsam_imgsz: [480, 640]    # For smaller TensorRT model (FastSAM-s-640x480.engine = 640w×480h)
