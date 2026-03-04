@@ -7,7 +7,7 @@ Layout inspired by [Netflix/dispatch](https://github.com/Netflix/dispatch).
 - **`./`** — Core library implementing modular service architecture
 - **`./scripts/`** — Pipeline runner, post-processing, visualization, TensorRT export
 - **`./src/daaam/pipeline/orchestrator.py`** — Central `PipelineOrchestrator` that coordinates all services
-- **ROS 2 Interface** — Separate package at [MIT-SPARK/DAAAM_ROS](https://github.com/MIT-SPARK/DAAAM_ROS)
+- **ROS 2 Interface** — Separate package at [MIT-SPARK/DAAAM-ROS](https://github.com/MIT-SPARK/DAAAM-ROS)
 - **`daaam_ros/src/daaam_ros/nodes/daaam_node.py`** — Main ROS 2 node that instantiates the pipeline
 
 ## Service Architecture

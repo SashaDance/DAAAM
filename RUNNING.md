@@ -149,7 +149,7 @@ Key launch arguments:
 
 ## 5. Running without ROS 2
 
-!WARNING! This can be brittle and is not the preferred option of running the pipeline as the hydra python bindings are less actively maintained. If there are errors, please try to use the ROS2 DAAAM-ROS interface.
+!WARNING! This can be brittle and is not the preferred option of running the pipeline as the hydra python bindings are less actively maintained. If there are errors, please try to use the ROS2 [DAAAM-ROS](https://github.com/MIT-SPARK/DAAAM-ROS) interface.
 
 The standalone pipeline script reads image sequences or rosbags directly:
 

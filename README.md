@@ -13,7 +13,9 @@ Key contributions:
 - Hierarchical 4D scene graph construction with real-time performance
 - State-of-the-art results on NaVQA and SG3D benchmarks
 
-**[Installation](INSTALL.md) | [Running](RUNNING.md) | [Codebase](CODEBASE.md)**
+The ROS 2 interface lives in [DAAAM-ROS](https://github.com/MIT-SPARK/DAAAM-ROS).
+
+**[Installation](INSTALL.md) | [Running](RUNNING.md) | [Codebase](CODEBASE.md) | [DAAAM-ROS](https://github.com/MIT-SPARK/DAAAM-ROS)**
 
 ## Paper
 

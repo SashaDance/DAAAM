@@ -86,7 +86,7 @@ All repos live side-by-side under `~/ros2_ws/src/`.
 | Path | Repo | Branch | Notes |
 |---|---|---|---|
 | `daaam` | `MIT-SPARK/DAAAM` | `main` | Core library (this repo) |
-| `daaam_ros` | `MIT-SPARK/DAAAM_ROS` | `main` | ROS 2 interface |
+| `daaam_ros` | [`MIT-SPARK/DAAAM-ROS`](https://github.com/MIT-SPARK/DAAAM-ROS) | `main` | ROS 2 interface |
 | `hydra` | `MIT-SPARK/Hydra` | `project/daaam` | 3D Dynamic Scene Graphs |
 | `hydra_ros` | `MIT-SPARK/Hydra-ROS` | `project/daaam` | Hydra ROS 2 wrapper |
 | `spark_dsg` | `MIT-SPARK/Spark-DSG` | `project/daaam` | Scene graph data structure |
