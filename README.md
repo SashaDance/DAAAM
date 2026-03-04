@@ -1,4 +1,4 @@
-# DAAAM — Describe Anything, Anywhere, at Any Moment
+# CVPR 2026: DAAAM - Describe Anything, Anywhere, at Any Moment
 
 [[arXiv](https://arxiv.org/abs/2512.00565)] [[Project Page](https://nicolasgorlo.com/DAAAM_25)]
 
