@@ -29,9 +29,9 @@ def load_pseudo_labelspace(labelspace_path: pathlib.Path) -> Dict[str, Any]:
 		
 	# Ensure required fields exist
 	if "total_semantic_labels" not in config:
-		config["total_semantic_labels"] = 3000
+		config["total_semantic_labels"] = 10000
 	if "object_labels" not in config:
-		config["object_labels"] = list(range(3000))
+		config["object_labels"] = list(range(10000))
 	if "dynamic_labels" not in config:
 		config["dynamic_labels"] = []
 	if "invalid_labels" not in config:
