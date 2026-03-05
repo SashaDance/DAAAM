@@ -2,7 +2,8 @@
 
 from .image_sequence import ImageSequenceDataset
 from .hm3d_sem import HM3DSemDataset
+from .coda import CodaDataset
 
 __all__ = [
-	"ImageSequenceDataset", "HM3DSemDataset",
+	"ImageSequenceDataset", "HM3DSemDataset", "CodaDataset",
 ]

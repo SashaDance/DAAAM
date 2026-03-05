@@ -20,7 +20,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from daaam.config import PipelineConfig
-from daaam.datasets import ImageSequenceDataset, HM3DSemDataset
+from daaam.datasets import ImageSequenceDataset, HM3DSemDataset, CodaDataset
 from daaam.hydra.runner import HydraPipelineRunner
 from daaam import ROOT_DIR
 
@@ -57,7 +57,7 @@ def parse_args():
 	parser.add_argument(
 		"--dataset-type",
 		type=str,
-		choices=["ImageSequenceDataset", "HM3DSemDataset"],
+		choices=["ImageSequenceDataset", "HM3DSemDataset", "CodaDataset"],
 		default="ImageSequenceDataset",
 		help="Dataset class name to use"
 	)
@@ -69,104 +69,119 @@ def parse_args():
 		help="Dataset name for output directory structure (e.g., 'clio', 'habitat')"
 	)
 	
-	# Model configuration (matching launch file defaults)
+	# Model configuration — defaults are None so pipeline_config.yaml is the source of truth.
+	# CLI args only override config when explicitly passed.
 	parser.add_argument(
 		"--agent-model-name",
 		type=str,
-		default="gpt-4.1-mini",
+		default=None,
 		help="Agent model name for grounding"
 	)
-	
+
 	parser.add_argument(
 		"--sam-model",
 		type=str,
-		default="fastsam/FastSAM-s.pt",
+		default=None,
 		help="SAM model path"
 	)
-	
+
 	parser.add_argument(
 		"--sam-model-config-path",
 		type=str,
-		default="fastsam/fastsam_config.yaml",
+		default=None,
 		help="SAM model config path"
 	)
-	
+
 	parser.add_argument(
 		"--sentence-embedding-model",
 		type=str,
-		default="sentence-transformers/sentence-t5-large",
+		default=None,
 		help="Sentence embedding model"
 	)
-	
+
 	parser.add_argument(
 		"--depth-scale",
 		type=float,
-		default=1.0,
+		default=None,
 		help="Scale factor to convert depth to meters"
 	)
-	
+
 	parser.add_argument(
 		"--fps",
 		type=float,
-		default=30.0,
+		default=None,
 		help="Dataset framerate"
 	)
-	
-	# Processing parameters (matching launch file)
+
+	# CODA-specific options
+	parser.add_argument(
+		"--sequence", type=str, default=None,
+		help="CODA sequence ID (e.g., '0', '4')"
+	)
+	parser.add_argument(
+		"--camera-id", type=str, default=None,
+		help="CODA camera ID (e.g., 'cam0', 'cam1')"
+	)
+	parser.add_argument(
+		"--depth-source", type=str, default=None,
+		help="CODA depth source ('3d_raw_estimated', '3d_raw', 'none')"
+	)
+
+	# Processing parameters
 	parser.add_argument(
 		"--query-interval-frames",
 		type=int,
-		default=60,
+		default=None,
 		help="Query interval for grounding"
 	)
-	
+
 	parser.add_argument(
 		"--num-assignment-workers",
 		type=int,
-		default=1,
+		default=None,
 		help="Number of assignment workers"
 	)
-	
+
 	parser.add_argument(
 		"--num-grounding-workers",
 		type=int,
-		default=4,
+		default=None,
 		help="Number of grounding workers"
 	)
-	
+
 	parser.add_argument(
 		"--assignment-worker",
 		type=str,
-		default="min_frames_max_size",
+		default=None,
 		help="Assignment worker type"
 	)
-	
+
 	parser.add_argument(
 		"--grounding-worker",
 		type=str,
-		default="dam_multi_image",
+		default=None,
 		help="Grounding worker type"
 	)
-	
+
 	parser.add_argument(
 		"--min-mask-region-area",
 		type=int,
-		default=100,
+		default=None,
 		help="Minimum mask region area"
 	)
-	
+
 	# Depth filtering
 	parser.add_argument(
 		"--depth-lb",
 		type=float,
-		default=0.25,
+		default=None,
 		help="Depth lower bound in meters"
 	)
-	
+
 	parser.add_argument(
 		"--depth-ub",
 		type=float,
-		default=5.0,
+		default=None,
 		help="Depth upper bound in meters"
 	)
 	
@@ -215,7 +230,7 @@ def parse_args():
 		"--labelspace-colors",
 		type=str,
 		default=None,
-		help="Path to labelspace colors CSV file (optional)"
+		help="Labelspace colors CSV file"
 	)
 	
 	parser.add_argument(
@@ -271,21 +286,14 @@ def parse_args():
 		help="Load dataset and config but don't run pipeline"
 	)
 	
-	# Configuration files
+	# Semantic configuration
 	parser.add_argument(
 		"--semantic-config",
 		type=str,
-		default="config/labels_pseudo.yaml",
+		default=None,
 		help="Semantic configuration file"
 	)
-	
-	parser.add_argument(
-		"--labelspace-colors",
-		type=str,
-		default="config/labels_pseudo.csv",
-		help="Labelspace colors file"
-	)
-	
+
 	return parser.parse_args()
 
 
@@ -385,38 +393,54 @@ def main():
 		print("Using default configuration")
 		config = PipelineConfig()
 		
-	# Apply model and processing parameters from args
-	config.segmentation.model_name = args.sam_model
-	config.segmentation.model_config_path = args.sam_model_config_path
-	config.segmentation.min_mask_region_area = args.min_mask_region_area
-	
-	config.grounding.agent_model_name = args.agent_model_name
-	config.grounding.query_interval_frames = args.query_interval_frames
-	config.grounding.sentence_embedding_model = args.sentence_embedding_model
-	
-	config.workers.num_assignment_workers = args.num_assignment_workers
-	config.workers.num_grounding_workers = args.num_grounding_workers
-	config.workers.assignment_worker = args.assignment_worker
-	config.workers.grounding_worker = args.grounding_worker
-	
-	config.depth.depth_lb = args.depth_lb
-	config.depth.depth_ub = args.depth_ub
-	
-	config.semantic_config_path = args.semantic_config
-	config.labelspace_colors_path = args.labelspace_colors
-	
-	# Apply dataset configuration
+	# Apply CLI overrides only when explicitly passed (None = use config file value)
+	if args.sam_model is not None:
+		config.segmentation.model_name = args.sam_model
+	if args.sam_model_config_path is not None:
+		config.segmentation.model_config_path = args.sam_model_config_path
+	if args.min_mask_region_area is not None:
+		config.segmentation.min_mask_region_area = args.min_mask_region_area
+
+	if args.agent_model_name is not None:
+		config.grounding.agent_model_name = args.agent_model_name
+	if args.query_interval_frames is not None:
+		config.grounding.query_interval_frames = args.query_interval_frames
+	if args.sentence_embedding_model is not None:
+		config.grounding.sentence_embedding_model = args.sentence_embedding_model
+
+	if args.num_assignment_workers is not None:
+		config.workers.num_assignment_workers = args.num_assignment_workers
+	if args.num_grounding_workers is not None:
+		config.workers.num_grounding_workers = args.num_grounding_workers
+	if args.assignment_worker is not None:
+		config.workers.assignment_worker = args.assignment_worker
+	if args.grounding_worker is not None:
+		config.workers.grounding_worker = args.grounding_worker
+
+	if args.depth_lb is not None:
+		config.depth.depth_lb = args.depth_lb
+	if args.depth_ub is not None:
+		config.depth.depth_ub = args.depth_ub
+
+	if args.semantic_config is not None:
+		config.semantic_config_path = args.semantic_config
+	if args.labelspace_colors is not None:
+		config.labelspace_colors_path = args.labelspace_colors
+
+	# Dataset configuration
 	config.dataset.data_path = args.data_path
 	config.dataset.dataset_type = args.dataset_type
-	config.dataset.depth_scale = args.depth_scale
-	config.dataset.fps = args.fps
+	if args.depth_scale is not None:
+		config.dataset.depth_scale = args.depth_scale
+	if args.fps is not None:
+		config.dataset.fps = args.fps
 	config.dataset.max_frames = args.max_frames
 	
 	# Apply Hydra configuration (always enabled)
 	config.hydra.enable_hydra = True
 	config.hydra.hydra_config_path = args.hydra_config_path
 	config.hydra.labelspace_path = args.labelspace_path or config.semantic_config_path
-	config.hydra.labelspace_colors = args.labelspace_colors or config.labelspace_colors_path
+	config.hydra.labelspace_colors = config.labelspace_colors_path
 	config.hydra.zmq_url = None if args.zmq_url.lower() == 'none' else args.zmq_url
 		
 	# Apply command-line overrides
@@ -431,32 +455,42 @@ def main():
 	print(f"Using dataset type: {args.dataset_type}")
 	
 	dataset_config = {
-		"depth_scale": args.depth_scale,
-		"fps": args.fps,
+		"depth_scale": config.dataset.depth_scale,
+		"fps": config.dataset.fps,
 		"compute_velocities": getattr(config.dataset, 'compute_velocities', True),
 		"velocity_window": getattr(config.dataset, 'velocity_window', 10),
 		"velocity_alpha": getattr(config.dataset, 'velocity_alpha', 0.4)
 	}
 
 	try:
-		# Get dataset class by name
-		if args.dataset_type == "HM3DSemDataset":
+		if args.dataset_type == "CodaDataset":
+			dataset = CodaDataset(
+				Path(args.data_path),
+				config=dataset_config,
+				sequence=args.sequence or "0",
+				camera_id=args.camera_id or "cam0",
+				depth_source=args.depth_source or "3d_raw_estimated",
+				compute_velocities=dataset_config["compute_velocities"],
+				velocity_window=dataset_config["velocity_window"],
+				velocity_alpha=dataset_config["velocity_alpha"],
+			)
+		elif args.dataset_type == "HM3DSemDataset":
 			dataset = HM3DSemDataset(
 				Path(args.data_path),
 				config=dataset_config,
-				depth_scale=args.depth_scale,
+				depth_scale=config.dataset.depth_scale,
 				compute_velocities=dataset_config["compute_velocities"],
 				velocity_window=dataset_config["velocity_window"],
-				velocity_alpha=dataset_config["velocity_alpha"]
+				velocity_alpha=dataset_config["velocity_alpha"],
 			)
-		else:  # Default to ImageSequenceDataset
+		else:
 			dataset = ImageSequenceDataset(
 				Path(args.data_path),
 				config=dataset_config,
-				depth_scale=args.depth_scale,
+				depth_scale=config.dataset.depth_scale,
 				compute_velocities=dataset_config["compute_velocities"],
 				velocity_window=dataset_config["velocity_window"],
-				velocity_alpha=dataset_config["velocity_alpha"]
+				velocity_alpha=dataset_config["velocity_alpha"],
 			)
 		print(f"Loaded {len(dataset)} frames from dataset")
 	except Exception as e:

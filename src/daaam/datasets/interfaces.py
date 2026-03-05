@@ -26,6 +26,14 @@ class DatasetFrame:
 	def to_pipeline_frame(self):
 		"""Convert to pipeline Frame format."""
 		from daaam.pipeline.models import Frame
+		camera_intrinsics = None
+		if self.camera_info and 'intrinsics' in self.camera_info:
+			K = self.camera_info['intrinsics']
+			if hasattr(K, '__getitem__'):
+				camera_intrinsics = {
+					'fx': float(K[0][0]), 'fy': float(K[1][1]),
+					'cx': float(K[0][2]), 'cy': float(K[1][2]),
+				}
 		return Frame(
 			frame_id=self.frame_id,
 			timestamp=self.timestamp,
@@ -33,7 +41,8 @@ class DatasetFrame:
 			depth_image=self.depth_image,
 			transform=self.transform,
 			lin_vel=self.lin_vel if self.lin_vel is not None else np.zeros(3),
-			ang_vel=self.ang_vel if self.ang_vel is not None else np.zeros(3)
+			ang_vel=self.ang_vel if self.ang_vel is not None else np.zeros(3),
+			camera_intrinsics=camera_intrinsics,
 		)
 
 

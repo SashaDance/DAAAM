@@ -5,18 +5,16 @@ from typing import Optional, Dict, Any, Type
 import json
 
 from .interfaces import BaseDataset
-from .loaders import ImageSequenceDataset
+from .loaders import ImageSequenceDataset, CodaDataset
 
 
 class DatasetFactory:
 	"""Factory for creating dataset instances based on path structure."""
-	
+
 	# Registry of dataset types
 	_dataset_types: Dict[str, Type[BaseDataset]] = {
 		"image_sequence": ImageSequenceDataset,
-		# Future: Add more dataset types here
-		# "rosbag": RosbagDataset,
-		# "synthetic": SyntheticDataset,
+		"coda": CodaDataset,
 	}
 	
 	@classmethod
@@ -71,6 +69,12 @@ class DatasetFactory:
 		if not data_path.exists():
 			raise ValueError(f"Dataset path does not exist: {data_path}")
 			
+		# Check for CODa structure (2d_rect/ directory with camera subdirs)
+		if data_path.is_dir():
+			rect_dir = data_path / "2d_rect"
+			if rect_dir.exists() and rect_dir.is_dir():
+				return "coda"
+
 		# Check for image sequence structure
 		if data_path.is_dir():
 			rgb_dir = data_path / "rgb"

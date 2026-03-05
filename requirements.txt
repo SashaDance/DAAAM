@@ -1,6 +1,7 @@
 boxmot @ git+https://github.com/nicogorlo/boxmot.git
 dam @ git+https://github.com/nicogorlo/describe-anything-batch.git
 perception_models @ git+https://github.com/facebookresearch/perception_models
+natsort
 networkx == 3.1
 python-dotenv
 langchain
