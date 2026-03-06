@@ -2,7 +2,7 @@
 """Main script to run the daaam pipeline without ROS.
 
 This script provides a command-line interface to process datasets through
-the MMLLM Grounded SAM pipeline with Hydra integration for scene graph generation.
+the DAAAM pipeline with Hydra integration for scene graph generation.
 
 Usage:
 	python run_pipeline.py /path/to/dataset --config config/pipeline_config.yaml

@@ -81,7 +81,7 @@ pip install -e .
 
 ## Workspace Repo Map
 
-All repos live side-by-side under `~/ros2_ws/src/`.
+All repos live side-by-side under `~/ros2_ws/src/`. Apart from `daaam` and `daaam_ros` these are all `hydra` dependencies. They will be installed automatically if you follow the instructions above. 
 
 | Path | Repo | Branch | Notes |
 |---|---|---|---|
@@ -109,21 +109,19 @@ FastSAM and the BotSort ReID model can be exported to TensorRT `.engine` files f
 
 ### Prerequisites
 
-The PyTorch CUDA version and the TensorRT CUDA version **must match**. If PyTorch is installed with `cu128`, TensorRT must also target CUDA 12:
+The PyTorch CUDA version and the TensorRT CUDA version **must match**. If PyTorch is installed with `cu128`, TensorRT must the same version of CUDA that your GPU is running.
 
-```bash
-pip install tensorrt-cu12==10.13.3.9
-```
+**Warning:** If you are using a CUDA version other than 12.X or do not intend to use TRT acceleration, adjust the version of `tensorrt-cuXX`in [requirements.txt](./requirements.txt) .
 
-**Warning:** The `nvidia-tensorrt` and `tensorrt` meta-packages on PyPI default to `tensorrt_cu13`, which loads CUDA 13 runtime libs alongside PyTorch's CUDA 12 libs — this is unsupported by NVIDIA and can cause GPU hangs / system freezes.
+Further, the defaults in all launch files in [DAAAM-ROS](https://github.com/MIT-SPARK/DAAAM-ROS/tree/main/launch) are set to `.engine` files. if you intend to use standard `.pt` models, adapt the launch files. 
 
-### Exporting FastSAM
+### Exporting FastSAM TRT model
 
 ```bash
 python scripts/export_fastsam_trt.py --model_name FastSAM-x
 ```
 
-### Exporting BotSort ReID (vanilla CLIP)
+### Exporting BotSort ReID (vanilla CLIP) TRT model
 
 ```bash
 python scripts/export_vanilla_clip_engine.py

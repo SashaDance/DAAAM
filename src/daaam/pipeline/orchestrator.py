@@ -38,9 +38,9 @@ from daaam.assignment.schemas import assignment_task_to_json
 
 class PipelineOrchestrator:
 	"""
-	Orchestrates the entire MMLLM Grounded SAM pipeline with modular services.
+	Orchestrates the entire DAAAM pipeline with modular services.
 	
-	This replaces the monolithic MMLLMGroundedSAM class with a clean separation
+	This replaces the monolithic DAAAM class with a clean separation
 	of concerns using dedicated services for each major component.
 	"""
 	

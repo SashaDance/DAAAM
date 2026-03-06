@@ -127,8 +127,11 @@ source ~/ros2_ws/install/setup.bash
 ros2 launch daaam_ros coda_daaam_hydra.launch.yaml scene:=coda_sequence_0
 
 # Terminal 2: play bag
-ros2 bag play /path/to/CODa/coda_0_with_depth.bag
+ros2 bag play /path/to/CODa/coda_0_with_depth.bag --clock -p --qos-profile-overrides-path ~/.tf_overrides.yaml
 ```
+
+Once everything is loaded press play (space) on the bag.
+Attention! It is important to pass `--clock` and `--qos-profile-overrides-path ~/.tf_overrides.yaml`.
 
 Key launch arguments:
 
