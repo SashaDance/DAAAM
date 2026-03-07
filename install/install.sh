@@ -5,7 +5,7 @@
 #   git clone git@github.com:MIT-SPARK/DAAAM.git daaam
 #   bash daaam/install/install.sh
 #
-# Assumes: ROS2 Iron+ sourced, PyTorch already installed, SSH keys for github.com
+# Assumes: ROS2 Iron+ sourced
 set -euo pipefail
 
 

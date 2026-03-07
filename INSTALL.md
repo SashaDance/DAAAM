@@ -15,14 +15,7 @@ for installing ROS2 refer to https://docs.ros.org/en/jazzy/Installation.html .
 
 ## PyTorch
 
-Install PyTorch **before** running the install script. Match the `cu` suffix to your CUDA version (tested with `cu128`).
-
-```bash
-# CUDA 12.8
-pip install torch==2.7.0+cu128 torchvision==0.22.0+cu128 --index-url https://download.pytorch.org/whl/cu128
-```
-
-Also tested with `torch==2.8.0+cu128`.
+Make sure to match the `cu` suffix in [`./requirements.txt`](./requirements.txt) to your CUDA version (tested with `cu128`).
 
 ## Workspace Setup
 
@@ -39,10 +32,6 @@ The script clones all 17 repos, installs system & rosdep deps, writes `colcon_de
 
 ```bash
 source /opt/ros/${ROS_DISTRO}/setup.bash
-
-# PyTorch (adjust cu version to match your CUDA)
-pip install torch==2.7.0+cu128 torchvision==0.22.0+cu128 \
-  --index-url https://download.pytorch.org/whl/cu128
 
 # System deps
 sudo apt install python3-vcstool python3-tk libgoogle-glog-dev \
