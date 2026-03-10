@@ -6,7 +6,6 @@ Loads data from the CODa dataset structure:
 - poses/dense_global/sequence/*.txt, fallback to poses/dense/ - Pose data (world->os1)
 - timestamps/sequence.txt - Frame timestamps
 - 3d_raw_estimated/cam{0,1}/sequence/*.png - Estimated depth images (optional)
-- 3d_raw/cam3/sequence/*.png - Raw depth images (optional)
 
 Poses are world->os1 (lidar). This loader composes T_world_os1 @ T_os1_cam
 to produce world->camera poses for the standalone pipeline.
@@ -108,6 +107,7 @@ class CodaDataset(BaseDataset):
 			return
 
 		if self.depth_source == "3d_raw":
+			raise(ValueError("Raw depth from cam3 is in a different reference frame. We recommend running stereo depth on the frames of cam0/cam1 instead, which are rectified and in the same frame as the RGB images."))
 			depth_base = self.data_path / "3d_raw" / "cam3" / self.sequence
 			if depth_base.exists():
 				files = natsorted(depth_base.glob("*.png"))
