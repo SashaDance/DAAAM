@@ -30,7 +30,7 @@ CODa/
 │   ├── cam0/
 │   │   └── <seq>/    # Numbered frames: 000000.png, 000001.png, ...
 │   └── cam1/
-├── 3d_raw/           # Estimated stereo depth (shipped with CODa)
+├── 3d_raw/           # DO NOT USE, THIS DEPTH IS IN A DIFFERENT REFERENCE FRAME AND NOT USABLE WITH OUR PIPELINE
 │   ├── cam0/
 │   └── cam0_undist/
 ├── calibrations/     # Per-sequence camera intrinsics & extrinsics

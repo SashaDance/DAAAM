@@ -108,11 +108,6 @@ class CodaDataset(BaseDataset):
 
 		if self.depth_source == "3d_raw":
 			raise(ValueError("Raw depth from cam3 is in a different reference frame. We recommend running stereo depth on the frames of cam0/cam1 instead, which are rectified and in the same frame as the RGB images."))
-			depth_base = self.data_path / "3d_raw" / "cam3" / self.sequence
-			if depth_base.exists():
-				files = natsorted(depth_base.glob("*.png"))
-				if files:
-					self.depth_paths["cam0"] = files
 		elif self.depth_source == "3d_raw_estimated":
 			depth_base = self.data_path / "3d_raw_estimated"
 			for cam_id in self.image_paths:
@@ -122,7 +117,7 @@ class CodaDataset(BaseDataset):
 					if files:
 						self.depth_paths[cam_id] = files
 		else:
-			raise ValueError(f"Unknown depth source: '{self.depth_source}'. Use '3d_raw', '3d_raw_estimated', or 'none'.")
+			raise ValueError(f"Unknown depth source: '{self.depth_source}'. Use '3d_raw_estimated', or 'none'.")
 
 	def _load_calibrations(self) -> None:
 		calib_dir = self.data_path / "calibrations" / self.sequence
