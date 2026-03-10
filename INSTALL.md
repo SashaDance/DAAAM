@@ -4,8 +4,8 @@
 
 | Requirement | Tested with |
 |---|---|
-| Ubuntu | 22.04 / 24.04 |
-| [ROS 2](https://docs.ros.org/en/jazzy/Installation.html) | Iron / Jazzy |
+| Ubuntu | 24.04 |
+| [ROS 2](https://docs.ros.org/en/jazzy/Installation.html) | Jazzy |
 | NVIDIA GPU with sufficient VRAM (24GB+) + CUDA | CUDA 12.x |
 | Python | 3.10+ (pyenv or system) |
 

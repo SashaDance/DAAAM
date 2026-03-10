@@ -36,7 +36,7 @@ vcs import . < "$SCRIPT_DIR/packages.yaml" --workers 1 --skip-existing
 
 # --- 3. Rosdep ---
 echo "--- [3/5] Rosdep ---"
-rosdep update --rosdistro="${ROS_DISTRO:-iron}" || true
+rosdep update --rosdistro="${ROS_DISTRO:-jazzy}" || true
 rosdep install --from-paths "$WS_SRC" --ignore-src -r -y
 
 # --- 4. Colcon defaults + build ---
