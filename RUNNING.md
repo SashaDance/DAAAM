@@ -45,6 +45,7 @@ CODa/
 For the CODa dataset, depth can be estimated via stereo-disparity between `cam0` and `cam1`.
 We estimated depth a-priori in our experiments using [FoundationStereo](https://github.com/NVlabs/FoundationStereo).
 Below we provide instructions on running depth estimation with that model.
+The script can be found at: [run_coda_depth_estimation.py](https://github.com/nicogorlo/FoundationStereo/blob/master/scripts/run_coda_depth_estimation.py)
 
 ```bash
 cd /path/to/FoundationStereo
