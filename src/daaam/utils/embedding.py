@@ -273,6 +273,9 @@ class SentenceEmbeddingHandler:
 			prompt=prompt
 		)
 
+		if embeddings.ndim == 1:
+			embeddings = embeddings[np.newaxis, :]
+
 		return embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 	
 	def extract_text_embeddings_with_format(
