@@ -7,7 +7,7 @@ import click
 import spark_dsg as sdsg
 from pathlib import Path
 
-from daaam.scene_understanding.utils import preprocess_scene_graph, START_TIMES
+from daaam.utils.evaluation import preprocess_scene_graph, START_TIMES
 
 from daaam.scene_understanding.services import SceneUnderstandingAgent
 from daaam.scene_understanding.config import SceneUnderstandingConfig

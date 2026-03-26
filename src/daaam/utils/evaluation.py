@@ -5,7 +5,11 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 import click
 import numpy as np
+import traceback
+import yaml
+import spark_dsg as sdsg
 
+from daaam.scene_understanding.utils import get_time_texas_from_sdsg_timestamp
 
 START_TIMES = {
 	0: 1673884185.589118,
@@ -17,140 +21,236 @@ START_TIMES = {
 	22: 1676064138.910544
 }
 
-def evaluate_output(qa_instance: Dict, predicted: Any) -> Dict:
-	"""Evaluate the predicted output against ground truth and compute metrics."""
-	out_error = {}
-	q_type = qa_instance['type']
+def load_background_objects_temporal_data(yaml_path: Path) -> Dict[int, Dict]:
+	"""Load temporal data for background objects from YAML file.
 
-	if q_type == 'position':
-		# Ground truth can be in different formats
-		if isinstance(qa_instance['answers'], list) and len(qa_instance['answers']) > 0:
-			if isinstance(qa_instance['answers'][0], dict) and 'position' in qa_instance['answers'][0]:
-				answer = np.array(qa_instance['answers'][0]['position'])
-			else:
-				# Assume it's a direct position list
-				answer = np.array(qa_instance['answers'][0] if isinstance(qa_instance['answers'][0], list) else qa_instance['answers'])
-		elif isinstance(qa_instance['answers'], dict) and 'position' in qa_instance['answers']:
-			answer = np.array(qa_instance['answers']['position'])
-		else:
-			answer = np.array([0, 0, 0])  # Default if no answer
+	Args:
+		yaml_path: Path to background_objects.yaml file
 
-		# Response objects from SceneUnderstandingAgent have 'answer' field
-		if hasattr(predicted, 'answer'):
-			pred_pos = np.array(predicted.answer if predicted.answer is not None else [0, 0, 0])
-		elif isinstance(predicted, dict) and 'answer' in predicted:
-			pred_pos = np.array(predicted['answer'])
-		elif isinstance(predicted, dict) and 'position' in predicted:
-			pred_pos = np.array(predicted['position'])
-		else:
-			pred_pos = np.array([0, 0, 0])
+	Returns:
+		Dictionary mapping semantic_id to temporal data dict with keys:
+		{first_observed, last_observed, observations}
+	"""
+	if not yaml_path.exists():
+		print(f"Warning: Background objects YAML not found: {yaml_path}")
+		return {}
 
-		try:
-			dist = np.linalg.norm(answer - pred_pos)
-			out_error['position_error'] = float(dist)
-		except:
-			out_error['position_error'] = float('inf')
+	try:
+		with open(yaml_path, 'r') as f:
+			bg_data = yaml.safe_load(f)
 
-	elif q_type == 'binary':
-		# Get ground truth answer
-		answer_text = None
-		if isinstance(qa_instance['answers'], dict) and 'text' in qa_instance['answers']:
-			# Format: {'text': ['Yes', 'Yes']}
-			text_answers = qa_instance['answers']['text']
-			if isinstance(text_answers, list):
-				for ans in text_answers:
-					if isinstance(ans, str) and ans.lower().strip() in ['yes', 'no']:
-						answer_text = ans.lower().strip()
-						break
-		elif isinstance(qa_instance['answers'], list):
-			# Alternative format: direct list
-			for ans in qa_instance['answers']:
-				if isinstance(ans, str) and ans.lower().strip() in ['yes', 'no']:
-					answer_text = ans.lower().strip()
-					break
+		temporal_map = {}
+		objects = bg_data.get('objects', [])
 
-		# Response objects from SceneUnderstandingAgent have 'answer' field
-		if hasattr(predicted, 'answer'):
-			pred_binary = str(predicted.answer).lower().strip() if predicted.answer is not None else 'unknown'
-		elif isinstance(predicted, dict) and 'answer' in predicted:
-			pred_binary = str(predicted['answer']).lower().strip()
-		elif isinstance(predicted, dict) and 'binary' in predicted:
-			pred_binary = str(predicted['binary']).lower().strip()
-		else:
-			pred_binary = 'unknown'
+		for obj in objects:
+			semantic_id = obj.get('semantic_id')
+			if semantic_id is None:
+				continue
 
-		if answer_text and pred_binary in ['yes', 'no']:
-			correct = 1 if pred_binary == answer_text else 0
-			out_error['binary_iscorrect'] = correct
-			# Debug info
-			out_error['binary_ground_truth'] = answer_text
-			out_error['binary_predicted'] = pred_binary
-		else:
-			out_error['binary_iscorrect'] = 0
-			# Debug info for failures
-			out_error['binary_ground_truth'] = answer_text if answer_text else 'not_found'
-			out_error['binary_predicted'] = pred_binary
-			out_error['binary_debug'] = f"Answer format: {qa_instance.get('answers')}"
+			temporal_map[semantic_id] = {
+				'first_observed': obj.get('first_observed'),
+				'last_observed': obj.get('last_observed'),
+				'observations': obj.get('observations', 0)
+			}
 
-	elif q_type == 'time' or q_type == 'duration':
-		# Get ground truth (in MINUTES, relative for "time" questions)
-		answer = 0
-		if isinstance(qa_instance.get('answers'), dict):
-			# Format: {"text": ["9.43 minutes ago"], "time": 9.43}
-			answer = float(qa_instance['answers'].get(q_type, 0))  # This is in minutes (relative for time)
-		elif isinstance(qa_instance.get('answers'), list) and len(qa_instance['answers']) > 0:
-			if isinstance(qa_instance['answers'][0], dict):
-				answer = qa_instance['answers'][0].get(q_type, 0)
-			else:
-				answer = float(qa_instance['answers'][0]) if qa_instance['answers'] else 0
+		print(f"Loaded temporal data for {len(temporal_map)} background objects from {yaml_path}")
+		return temporal_map
 
-		# Response objects from SceneUnderstandingAgent have 'answer' field (absolute SECONDS from start)
-		pred_time_seconds = 0
-		if hasattr(predicted, 'answer'):
-			pred_time_seconds = float(predicted.answer) if predicted.answer is not None else 0
-		elif isinstance(predicted, dict) and 'answer' in predicted:
-			pred_time_seconds = float(predicted['answer'])
-		elif isinstance(predicted, dict) and q_type in predicted:
-			pred_time_seconds = float(predicted[q_type])
+	except Exception as e:
+		print(f"Error loading background objects YAML from {yaml_path}: {e}")
+		traceback.print_exc()
+		return {}
+	
 
-		if q_type == 'time':
-			# For "time" questions, we need to convert absolute to relative
-			# Extract current time from question: "The current time is X seconds from start"
-			current_time_seconds = 0
-			question_text = qa_instance.get('question', '')
-			time_match = re.search(r'current time is ([\d.]+) seconds from start', question_text)
-			if time_match:
-				current_time_seconds = float(time_match.group(1))
+def enrich_background_objects_temporal_data(
+	sg: sdsg.DynamicSceneGraph,
+	bg_temporal_map: Dict[int, Dict],
+	start_time: float
+) -> int:
+	"""Enrich background objects with temporal data from YAML mapping.
 
-			# Convert to relative time: "X minutes ago"
-			# Model gives absolute seconds, we need (current_time - event_time) / 60
-			pred_time_minutes_ago = (current_time_seconds - pred_time_seconds) / 60.0
+	Args:
+		sg: Scene graph containing BACKGROUND_OBJECTS layer
+		bg_temporal_map: Mapping of semantic_id to temporal data
+		start_time: Unix timestamp to subtract for relative timestamps
 
-			dist = abs(answer - pred_time_minutes_ago)
-			out_error[f'{q_type}_error'] = float(dist)
+	Returns:
+		Count of enriched background object nodes
+	"""
+	enriched_count = 0
+	missing_ids = []
 
-			# Store debugging info
-			out_error[f'{q_type}_ground_truth_minutes_ago'] = answer
-			out_error[f'{q_type}_predicted_minutes_ago'] = pred_time_minutes_ago
-			out_error['current_time_seconds'] = current_time_seconds
-			out_error['predicted_absolute_seconds'] = pred_time_seconds
-		else:
-			# For "duration" questions, just convert seconds to minutes
-			pred_time_minutes = pred_time_seconds / 60.0
+	for node in sg.get_layer("BACKGROUND_OBJECTS").nodes:
+		semantic_id = node.attributes.semantic_label
 
-			dist = abs(answer - pred_time_minutes)
-			out_error[f'{q_type}_error'] = float(dist)
+		# Lookup temporal data
+		if semantic_id not in bg_temporal_map:
+			missing_ids.append(semantic_id)
+			continue
 
-			# Store debugging info
-			out_error[f'{q_type}_ground_truth_minutes'] = answer
-			out_error[f'{q_type}_predicted_minutes'] = pred_time_minutes
+		temporal_data = bg_temporal_map[semantic_id]
+		first_observed = temporal_data.get('first_observed')
+		last_observed = temporal_data.get('last_observed')
+		observations = temporal_data.get('observations', 0)
 
-	elif q_type == 'text':
-		# For text questions, just store the ground truth answer
-		out_error['answer'] = qa_instance['answers']
+		# Skip if temporal data is None
+		if first_observed is None or last_observed is None:
+			continue
 
-	else:
-		# Unknown question type
-		out_error['error'] = f"Unknown question type: {q_type}"
+		# Get existing metadata (mappingproxy is read-only, need a mutable copy)
+		metadata = dict(node.attributes.metadata.get())
 
-	return out_error
+		# Adjust timestamps to be relative to start_time
+		# (YAML timestamps are in the same coordinate system as DSG on disk)
+		first_observed_relative = first_observed - start_time
+		last_observed_relative = last_observed - start_time
+
+		# Create temporal_history dict
+		temporal_history = {
+			"first_observed": first_observed_relative,
+			"last_observed": last_observed_relative,
+			"observation_count": observations,
+			"timestamps": [],  # Not available in YAML
+			"frame_ids": []    # Not available in YAML
+		}
+
+		# Update metadata
+		metadata["temporal_history"] = temporal_history
+		node.attributes.metadata.set(metadata)
+		enriched_count += 1
+
+	if missing_ids:
+		print(f"Warning: {len(missing_ids)} background object semantic IDs not found in YAML: {missing_ids[:10]}...")
+
+	return enriched_count
+
+
+def load_question_metadata(seq_id: int, qa_data_dir: Path) -> Dict[str, Dict]:
+	"""Load question metadata from human_qa.json for the given sequence.
+
+	Args:
+		seq_id: Sequence ID
+		qa_data_dir: Base directory containing question data
+
+	Returns:
+		Dictionary mapping question ID to metadata (start_time, end_time, etc.)
+	"""
+	qa_file = qa_data_dir / str(seq_id) / "human_qa.json"
+
+	if not qa_file.exists():
+		print(f"Warning: Question metadata file not found: {qa_file}")
+		return {}
+
+	try:
+		with open(qa_file, 'r') as f:
+			qa_data = json.load(f)
+
+		metadata_map = {}
+		for question in qa_data.get('data', []):
+			question_id = question.get('id')
+			if question_id:
+				metadata_map[question_id] = {
+					'start_time': question.get('start_time') - START_TIMES[seq_id],
+					'end_time': question.get('end_time') - START_TIMES[seq_id],
+					'length': question.get('length'),
+					'length_category': question.get('length_category')
+				}
+
+		print(f"Loaded metadata for {len(metadata_map)} questions from {qa_file}")
+		return metadata_map
+
+	except Exception as e:
+		print(f"Error loading question metadata from {qa_file}: {e}")
+		return {}
+
+def preprocess_scene_graph(
+	sg: sdsg.DynamicSceneGraph,
+	start_time: float,
+	bg_objects_yaml_path: Optional[Path] = None
+) -> sdsg.DynamicSceneGraph:
+	"""Update timestamps in the DSG to be relative to start_time.
+
+	Args:
+		sg: Scene graph with Unix timestamps (absolute)
+		start_time: Unix timestamp to use as reference (t=0)
+		bg_objects_yaml_path: Optional path to background_objects.yaml for temporal enrichment
+
+	Returns:
+		Scene graph with timestamps relative to start_time
+	"""
+	# Validation: start_time should be a Unix timestamp (very large number > 1e9)
+	if start_time < 1e9:
+		print(f"WARNING: start_time={start_time} doesn't look like a Unix timestamp. "
+			  f"Expected value > 1e9 (year 2001+). This may indicate a coordinate system bug.")
+
+	first_observeds = []
+	skipped_objects = 0
+	skipped_background = 0
+
+	### Object nodes:
+	for node in sg.get_layer(sdsg.DsgLayers.OBJECTS).nodes:
+		# set object timestamps in scene graph to timestamp - start_time
+		metadata = node.attributes.metadata.get()
+		if metadata == {}:
+			continue
+		temporal_history = metadata.get("temporal_history", {})
+
+		# Skip objects with incomplete temporal history
+		if not temporal_history or "first_observed" not in temporal_history:
+			skipped_objects += 1
+			continue
+
+		temporal_history["first_observed"] -= start_time
+		temporal_history["last_observed"] -= start_time
+		temporal_history["timestamps"] = [t - start_time for t in temporal_history.get("timestamps", [])]
+		metadata["temporal_history"].update(temporal_history)
+		sg.get_node(node.id).attributes.metadata.set(dict(metadata))
+		first_observeds.append(temporal_history["first_observed"])
+
+	# print(f"Timestamps in SG: P{first_observeds}")
+
+	### Enrich background objects with temporal data from YAML if available:
+	if bg_objects_yaml_path is not None and bg_objects_yaml_path.exists():
+		bg_temporal_map = load_background_objects_temporal_data(bg_objects_yaml_path)
+		if bg_temporal_map:
+			enriched_count = enrich_background_objects_temporal_data(sg, bg_temporal_map, start_time)
+			print(f"Enriched {enriched_count} background objects with temporal data from YAML")
+
+	### Background object nodes:
+	for node in sg.get_layer("BACKGROUND_OBJECTS").nodes:
+		# set object timestamps in scene graph to timestamp - start_time
+		metadata = node.attributes.metadata.get()
+		if metadata == {}:
+			continue
+		temporal_history = dict(metadata.get("temporal_history", {}))
+
+		# Skip objects with incomplete temporal history
+		if not temporal_history or "first_observed" not in temporal_history:
+			skipped_background += 1
+			continue
+
+		temporal_history["first_observed"] -= start_time
+		temporal_history["last_observed"] -= start_time
+		temporal_history["timestamps"] = [t - start_time for t in temporal_history.get("timestamps", [])]
+		metadata["temporal_history"].update(temporal_history)
+		sg.get_node(node.id).attributes.metadata.set(dict(metadata))
+		first_observeds.append(temporal_history["first_observed"])
+
+	### Traversability places: 
+	for node in sg.get_layer(3,2).nodes:
+		# set place timestamps in scene graph to timestamp - start_time
+		node.attributes.first_observed_ns -= int(start_time * 1e9)
+		node.attributes.last_observed_ns -= int(start_time * 1e9)
+
+	### Agent nodes:
+	for agent_node in sg.get_layer(2,97).nodes:
+		timestamp_sg = agent_node.attributes.timestamp
+		timestamp_texas = get_time_texas_from_sdsg_timestamp(timestamp_sg)
+		agent_node.attributes.metadata.set({"timestamp": timestamp_texas - start_time})
+
+	# Log skipped objects if any
+	if skipped_objects > 0 or skipped_background > 0:
+		print(f"Note: Skipped {skipped_objects} objects and {skipped_background} background objects "
+			  f"with incomplete temporal_history during preprocessing")
+
+	return sg
