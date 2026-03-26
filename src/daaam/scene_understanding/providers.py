@@ -89,7 +89,7 @@ def _serialize_content_blocks(content_blocks: list) -> list:
 
 
 def _serialize_anthropic_response(response) -> dict:
-	"""Pre-serialize an Anthropic response into the dict format eval_navqa.py expects."""
+	"""Pre-serialize an Anthropic response into dict format."""
 	text_preview = ""
 	for block in response.content:
 		if hasattr(block, "text"):
