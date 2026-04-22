@@ -5,6 +5,7 @@ Conversion to Anthropic format happens here at the provider boundary.
 """
 
 import json
+import os
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -27,7 +28,22 @@ def create_client(provider: Provider):
 		import anthropic
 		return anthropic.Anthropic()
 	from openai import OpenAI
-	return OpenAI()
+
+	base_url = os.environ.get("OPENAI_BASE_URL")
+	default_headers = None
+	if base_url and "openrouter.ai" in base_url:
+		default_headers = {}
+		site_url = os.environ.get("OPENROUTER_SITE_URL")
+		app_name = os.environ.get("OPENROUTER_APP_NAME")
+		if site_url:
+			default_headers["HTTP-Referer"] = site_url
+		if app_name:
+			default_headers["X-OpenRouter-Title"] = app_name
+
+	return OpenAI(
+		base_url=base_url,
+		default_headers=default_headers,
+	)
 
 
 # Tool signature conversion: canonical OpenAI → Anthropic
