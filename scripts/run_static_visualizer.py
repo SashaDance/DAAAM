@@ -1,4 +1,4 @@
-0~#!/usr/bin/env python3
+#!/usr/bin/env python3
 
 """Static DSG Visualizer - Visualize a Dynamic Scene Graph from JSON using Rerun."""
 
