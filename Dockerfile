@@ -140,4 +140,8 @@ RUN printf 'source /opt/ros/%s/setup.bash\nsource %s/install/setup.bash\n' "${RO
 
 WORKDIR ${WS_ROOT}/src/daaam
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends nano && \
+    rm -rf /var/lib/apt/lists/*
+
 CMD ["bash"]
