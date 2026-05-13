@@ -1,0 +1,61 @@
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+ENV PYTHONPATH=/workspace/src
+ENV HF_HOME=/workspace/.cache/huggingface
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    pkg-config \
+    python3 \
+    python3-pip \
+    python3-dev \
+    libeigen3-dev \
+    nlohmann-json3-dev \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install setuptools wheel && \
+    python3 -m pip install \
+      click \
+      "numpy<2.0.0" \
+      scipy \
+      pyyaml \
+      python-dotenv \
+      pillow \
+      tqdm \
+      pydantic \
+      shapely \
+      openai \
+      anthropic \
+      "pybind11<3" \
+      scikit-build-core \
+      transformers==4.55.4 \
+      sentence_transformers==4.1.0 \
+      open_clip_torch
+
+RUN python3 -m pip install --extra-index-url https://download.pytorch.org/whl/cu124 \
+      torch==2.6.0+cu124 \
+      torchvision==0.21.0+cu124 \
+      torchaudio==2.6.0+cu124
+
+RUN python3 -m pip install git+https://github.com/nicogorlo/perception_models
+
+RUN python3 -m pip install --force-reinstall --extra-index-url https://download.pytorch.org/whl/cu124 \
+      torch==2.6.0+cu124 \
+      torchvision==0.21.0+cu124 \
+      torchaudio==2.6.0+cu124
+
+RUN git clone --branch project/daaam https://github.com/MIT-SPARK/Spark-DSG.git /tmp/Spark-DSG && \
+    python3 -m pip install --no-build-isolation /tmp/Spark-DSG && \
+    rm -rf /tmp/Spark-DSG
+
+WORKDIR /workspace
+
+CMD ["bash"]
