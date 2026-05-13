@@ -137,6 +137,7 @@ class PipelineConfig:
 	semantic_config_path: str = "config/labels_pseudo.yaml"
 	labelspace_colors_path: str = "config/labels_pseudo.csv"
 	hierarchical_optimization: bool = True
+	save_perframe_detections: bool = True
 	output_dir: str = "output"
 	log_dir: Optional[str] = None  # Runtime log directory for unified logging
 
@@ -209,6 +210,7 @@ class PipelineConfig:
 			'semantic_config_path': self.semantic_config_path,
 			'labelspace_colors_path': self.labelspace_colors_path,
 			'hierarchical_optimization': self.hierarchical_optimization,
+			'save_perframe_detections': self.save_perframe_detections,
 			'output_dir': self.output_dir,
 		}
 	

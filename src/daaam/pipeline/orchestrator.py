@@ -86,6 +86,7 @@ class PipelineOrchestrator:
 		timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 		self.output_dir = ROOT_DIR / (config.output_dir or "output") / f"out_{timestamp}"
 		self.output_dir.mkdir(parents=True, exist_ok=True)
+		self.perframe_detections_path = self.output_dir / "perframe_detections.jsonl"
 
 		# performance tracking
 		self.performance_tracker = PerformanceTracker()
@@ -435,6 +436,10 @@ class PipelineOrchestrator:
 		# Update frame with processed tracks
 		frame.tracks = processed_tracks
 
+		if self.config.save_perframe_detections:
+			with performance_measure("save_perframe_detections", self.logger.debug, self.performance_tracker):
+				self._save_perframe_detections(frame, processed_tracks, tracks)
+
 		# 3.5 (optional) extract CLIP features for each track if enabled
 		if self.config.grounding.enable_perframe_clip_features and frame.frame_id % self.config.grounding.clip_feature_interval_frames == 0:
 			with performance_measure("compute_clip_features", self.logger.debug, self.performance_tracker):
@@ -605,6 +610,69 @@ class PipelineOrchestrator:
 		
 		self.logger.debug(f"Number of tracks with valid depth: {len([t for t in processed_tracks if t.depth_valid])} / {len(processed_tracks)}")
 		return processed_tracks, track_masks
+
+	def _save_perframe_detections(
+		self,
+		frame: Frame,
+		processed_tracks: List[Track],
+		raw_tracks: np.ndarray,
+	) -> None:
+		"""Append mask-derived per-frame detection extents to a JSONL file."""
+		try:
+			raw_tracks_by_id = {}
+			for raw_track in raw_tracks:
+				track_id = int(raw_track[4])
+				raw_tracks_by_id[track_id] = raw_track
+
+			detections = []
+			with self._state_lock:
+				object_labels_copy = self.object_labels.copy()
+
+			for track in processed_tracks:
+				raw_track = raw_tracks_by_id.get(track.id)
+				record = {
+					"track_id": int(track.id),
+					"semantic_id": int(object_labels_copy.get(track.id, -1)),
+					"bbox_xyxy": self._json_safe_value(track.bbox),
+					"bbox_source": "mask_extent",
+					"depth_valid": bool(track.depth_valid),
+					"region_area": int(track.region_area),
+					"median_depth": self._json_safe_value(track.median_depth),
+				}
+
+				if raw_track is not None:
+					record.update({
+						"tracker_bbox_xyxy": self._json_safe_value(raw_track[:4]),
+						"confidence": self._json_safe_value(raw_track[5]),
+						"class_id": int(raw_track[6]),
+						"mask_idx": int(raw_track[7]),
+					})
+
+				detections.append(record)
+
+			frame_record = {
+				"frame_id": int(frame.frame_id),
+				"timestamp": self._json_safe_value(frame.timestamp),
+				"num_detections": len(detections),
+				"detections": detections,
+			}
+
+			with open(self.perframe_detections_path, "a") as f:
+				f.write(json.dumps(frame_record) + "\n")
+		except Exception as e:
+			self.logger.warning(f"Failed to save per-frame detections: {e}")
+
+	def _json_safe_value(self, value: Any) -> Any:
+		"""Convert numpy values to JSON-serializable Python values."""
+		if isinstance(value, np.ndarray):
+			return value.tolist()
+		if isinstance(value, np.generic):
+			return value.item()
+		if isinstance(value, (list, tuple)):
+			return [self._json_safe_value(item) for item in value]
+		if isinstance(value, dict):
+			return {key: self._json_safe_value(item) for key, item in value.items()}
+		return value
 	
 	def _validate_track_depth(
 		self, 

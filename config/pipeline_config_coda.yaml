@@ -69,4 +69,5 @@ scene_graph:
 semantic_config_path: "config/labels_pseudo.yaml"
 labelspace_colors_path: "config/labels_pseudo.csv"
 hierarchical_optimization: true
+save_perframe_detections: true
 output_dir: "output/coda"
