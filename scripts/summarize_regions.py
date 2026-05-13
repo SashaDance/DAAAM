@@ -2,6 +2,7 @@ import numpy as np
 import spark_dsg as sdsg
 import click
 import yaml
+import os
 from pathlib import Path
 from openai import OpenAI
 from pydantic import BaseModel, Field
@@ -9,6 +10,35 @@ from typing import List, Dict, Any, Tuple, Optional
 from spark_dsg import NodeSymbol
 
 from daaam.utils.scene_graph_utils import objects_by_region
+
+
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENROUTER_DEFAULT_MODEL = "openai/gpt-4.1-mini"
+
+
+def configure_openrouter_env() -> None:
+	"""Default the script to OpenRouter while still using OPENAI_API_KEY."""
+	os.environ.setdefault("OPENAI_BASE_URL", OPENROUTER_BASE_URL)
+	os.environ.setdefault("OPENROUTER_SITE_URL", "https://github.com/MIT-SPARK/DAAAM")
+	os.environ.setdefault("OPENROUTER_APP_NAME", "DAAAM summarize_regions")
+
+
+def create_openai_client() -> OpenAI:
+	base_url = os.environ.get("OPENAI_BASE_URL")
+	default_headers = None
+	if base_url and "openrouter.ai" in base_url:
+		default_headers = {}
+		site_url = os.environ.get("OPENROUTER_SITE_URL")
+		app_name = os.environ.get("OPENROUTER_APP_NAME")
+		if site_url:
+			default_headers["HTTP-Referer"] = site_url
+		if app_name:
+			default_headers["X-OpenRouter-Title"] = app_name
+
+	return OpenAI(
+		base_url=base_url,
+		default_headers=default_headers,
+	)
 
 def extract_traversable_floor_annotation(
 	region_id: int,
@@ -271,14 +301,14 @@ def summarize_region(
 	model_name: str,
 	max_retries: int = 3
 ) -> Optional[RegionSummary]:
-	"""Generate region summary using OpenAI structured output.
+	"""Generate region summary using OpenAI-compatible structured output.
 
 	Args:
 		region_data: Region data from prepare_region_data()
-		client: OpenAI client
+		client: OpenAI-compatible client
 		system_prompt: System prompt template
 		user_template: User prompt template
-		model_name: OpenAI model name
+		model_name: OpenRouter/OpenAI-compatible model name
 		max_retries: Maximum retry attempts
 
 	Returns:
@@ -330,8 +360,8 @@ def summarize_region(
 @click.option(
 	'--model-name',
 	type=str,
-	default="gpt-5-nano",
-	help='Name of the OpenAI model to use.'
+	default=OPENROUTER_DEFAULT_MODEL,
+	help='Name of the OpenRouter/OpenAI-compatible model to use.'
 )
 @click.option(
 	'--n-samples',
@@ -352,7 +382,14 @@ def summarize_region(
 	help='Scene graph filename for structure (default: clustered_dsg.json)'
 )
 def main(data_dir: str, model_name: str, n_samples: int, feature_key: str, scene_graph_file: str):
-	"""Summarize regions in the scene graph using OpenAI structured outputs."""
+	"""Summarize regions in the scene graph using OpenRouter structured outputs."""
+	configure_openrouter_env()
+
+	if not os.environ.get("OPENAI_API_KEY"):
+		raise click.ClickException(
+			"OPENAI_API_KEY is not set. Export your OpenRouter key first, for example: "
+			"export OPENAI_API_KEY=<YOUR_OPENROUTER_KEY>"
+		)
 
 	# load data
 	sg_path = Path(data_dir) / scene_graph_file
@@ -380,6 +417,8 @@ def main(data_dir: str, model_name: str, n_samples: int, feature_key: str, scene
 		print(f"Note: Using concatenated clip_feature + sentence_embedding_feature from scene_graph.metadata")
 	else:
 		print(f"Note: Using '{feature_key}' from scene_graph.metadata features")
+	print(f"LLM endpoint: {os.environ['OPENAI_BASE_URL']}")
+	print(f"Model: {model_name}")
 
 	script_dir = Path(__file__).parent.parent
 	template_dir = script_dir / "config" / "prompt_templates"
@@ -392,7 +431,7 @@ def main(data_dir: str, model_name: str, n_samples: int, feature_key: str, scene
 	with open(user_template_path, 'r') as f:
 		user_template = f.read()
 
-	client = OpenAI()
+	client = create_openai_client()
 
 	region_summaries = []
 	all_region_ids = set(objs_by_region.keys()) | set(bg_objs_by_region.keys())

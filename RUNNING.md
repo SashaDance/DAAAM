@@ -266,15 +266,14 @@ The pipeline writes results to the output directory (default: `output/out_<times
 
 ## 9. Agentic Scene Understanding
 
-Query the scene graph interactively using the agentic scene understanding pipeline. Requires a completed DSG (from §8) and an OpenAI API key.
+Query the scene graph interactively using the agentic scene understanding pipeline. Requires a completed DSG (from §8) and an OpenRouter API key exported as `OPENAI_API_KEY`.
 
 ```bash
-cd scripts
+export OPENAI_API_KEY=<YOUR_OPENROUTER_KEY>
 
-python demo_query.py \
+python scripts/demo_query.py \
   --dsg-path /path/to/output/dsg_updated.json \
-  --seq-id 0 \
-  --model-name gpt-5-mini
+  --seq-id 0
 ```
 
-This starts a REPL where you can ask free-form questions about the scene (e.g. "What objects are near the door?"). The agent uses tool-calling over the scene graph to answer.
+This defaults to the OpenRouter endpoint (`https://openrouter.ai/api/v1`) and the `openai/gpt-4.1-mini` model. Override `--model-name` if you want a different OpenRouter model. The agent uses tool-calling over the scene graph to answer free-form questions such as "What objects are near the door?".

@@ -26,7 +26,7 @@ git clone git@github.com:MIT-SPARK/DAAAM.git daaam
 bash daaam/install/install.sh
 ```
 
-The script clones all 17 repos, installs system & rosdep deps, writes `colcon_defaults.yaml`, builds the C++ workspace, and runs `pip install -r requirements.txt && pip install -e .` for the Python package.
+The script clones all 17 repos, installs system & rosdep deps, writes `colcon_defaults.yaml`, installs `small_gicp` separately so `khronos` can discover it, builds the C++ workspace with a lighter default concurrency (`1` package worker, `1` compiler job) in two passes (`everything except khronos` and its skipped ROS wrappers, then `khronos`), and finishes with the editable Python installs for `spark_dsg` and `daaam`.
 
 ## Manual Step-by-Step
 
@@ -49,7 +49,8 @@ cat > ~/ros2_ws/colcon_defaults.yaml <<'YAML'
 ---
 build:
   symlink-install: true
-  packages-skip: [khronos_msgs, khronos_ros, khronos_eval, hydra_multi_ros, spark_fast_lio, ouroboros_ros, ouroboros_msgs]
+  parallel-workers: 1
+  packages-skip: [small_gicp, khronos_msgs, khronos_ros, khronos_eval, hydra_multi_ros, spark_fast_lio, ouroboros_ros, ouroboros_msgs]
   cmake-args:
     - --no-warn-unused-cli
     - -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -58,14 +59,32 @@ build:
     - -DGTSAM_USE_SYSTEM_EIGEN=ON
 YAML
 
-# Build (gtsam is RAM-hungry — use -j2 on <16 GB machines)
+# Install small_gicp so khronos can find its CMake package
+cmake -S ~/ros2_ws/src/small_gicp -B /tmp/daaam-small_gicp-build \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build /tmp/daaam-small_gicp-build -j 1
+sudo cmake --install /tmp/daaam-small_gicp-build
+rm -rf /tmp/daaam-small_gicp-build
+
+# Build (defaults below keep RAM pressure down; split khronos into a second pass for better Docker/local rebuilds)
 cd ~/ros2_ws
-colcon build --continue-on-error
+CMAKE_BUILD_PARALLEL_LEVEL=1 colcon build --continue-on-error --parallel-workers 1 \
+  --packages-skip small_gicp khronos khronos_msgs khronos_ros khronos_eval hydra_multi_ros spark_fast_lio ouroboros_ros ouroboros_msgs
+source ~/ros2_ws/install/setup.bash
+CMAKE_BUILD_PARALLEL_LEVEL=1 colcon build --continue-on-error --parallel-workers 1 --packages-select khronos
 
 # Python deps + editable install
 cd ~/ros2_ws/src/daaam
 pip install -r requirements.txt
+pip install -e ../spark_dsg
 pip install -e .
+```
+
+Override the lighter defaults when you want faster builds:
+
+```bash
+COLCON_PARALLEL_WORKERS=2 CMAKE_BUILD_PARALLEL_LEVEL=4 bash daaam/install/install.sh
 ```
 
 ## Workspace Repo Map

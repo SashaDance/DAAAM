@@ -22,7 +22,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     build-essential \
     ca-certificates \
     cmake \

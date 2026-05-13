@@ -243,10 +243,13 @@ def preprocess_scene_graph(
 		node.attributes.last_observed_ns -= int(start_time * 1e9)
 
 	### Agent nodes:
-	for agent_node in sg.get_layer(2,97).nodes:
-		timestamp_sg = agent_node.attributes.timestamp
-		timestamp_texas = get_time_texas_from_sdsg_timestamp(timestamp_sg)
-		agent_node.attributes.metadata.set({"timestamp": timestamp_texas - start_time})
+	if sg.has_layer(2, 97):
+		for agent_node in sg.get_layer(2,97).nodes:
+			timestamp_sg = agent_node.attributes.timestamp
+			timestamp_texas = get_time_texas_from_sdsg_timestamp(timestamp_sg)
+			agent_node.attributes.metadata.set({"timestamp": timestamp_texas - start_time})
+	else:
+		print("Note: Scene graph has no agent layer 2[97]; skipping agent timestamp preprocessing")
 
 	# Log skipped objects if any
 	if skipped_objects > 0 or skipped_background > 0:

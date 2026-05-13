@@ -46,14 +46,19 @@ class SceneUnderstandingAgent(SceneUnderstandingInterface):
 		# Create shared embedding handlers (expensive models, load once)
 		import torch
 		from daaam.utils.embedding import CLIPHandler, SentenceEmbeddingHandler
+		device = "cuda" if torch.cuda.is_available() else "cpu"
 
 		self.clip_handler = None
 		if config.tool_config.clip_model_name and config.tool_config.clip_backend:
-			self.clip_handler = CLIPHandler(model_name=config.tool_config.clip_model_name, backend=config.tool_config.clip_backend)
+			self.clip_handler = CLIPHandler(
+				model_name=config.tool_config.clip_model_name,
+				backend=config.tool_config.clip_backend,
+				device=device,
+			)
 
 		self.sentence_handler = SentenceEmbeddingHandler(
 			model_name=config.tool_config.sentence_embedding_model_name,
-			device="cuda" if torch.cuda.is_available() else "cpu"
+			device=device,
 		)
 
 		# Inject shared handlers into all tools

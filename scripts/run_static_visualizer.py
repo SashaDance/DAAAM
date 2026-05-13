@@ -135,6 +135,12 @@ def parse_arguments():
 		default=False,
 		help="Log each region (room + traversability) to separate entity paths for independent coloring"
 	)
+	parser.add_argument(
+		"--save-rrd",
+		type=str,
+		default="",
+		help="Optional path to save the logged visualization as a .rrd recording"
+	)
 
 	args = parser.parse_args()
 	return args
@@ -170,6 +176,8 @@ def main():
 		object_subsample_grid_size=args.object_subsample_grid_size,
 		log_regions_separately=args.log_regions_separately
 	)
+	if args.save_rrd:
+		rr.save(args.save_rrd)
 	visualizer.visualize()
 	
 	# Keep the script running if spawned

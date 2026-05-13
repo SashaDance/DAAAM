@@ -1,5 +1,6 @@
 from typing import List, Optional, Any, Tuple, Dict, Union
 from dataclasses import dataclass
+from contextlib import nullcontext
 import torch
 import numpy as np
 from PIL import Image
@@ -114,7 +115,8 @@ class CLIPHandler:
 				[self.preprocess(img) for img in batch_images]
 			).to(self.device)
 
-			with torch.autocast("cuda"):
+			autocast_ctx = torch.autocast("cuda") if self.device == "cuda" and torch.cuda.is_available() else nullcontext()
+			with autocast_ctx:
 				batch_features = self.model.encode_image(batch_tensors)
 			features.append(batch_features.cpu().numpy())
 
@@ -147,7 +149,8 @@ class CLIPHandler:
 
 		# Single forward pass for all images (with autocast for PE)
 		if self.backend == "pe":
-			with torch.autocast("cuda"):
+			autocast_ctx = torch.autocast("cuda") if self.device == "cuda" and torch.cuda.is_available() else nullcontext()
+			with autocast_ctx:
 				features = self.model.encode_image(preprocessed)
 		else:
 			features = self.model.encode_image(preprocessed)
@@ -200,7 +203,8 @@ class CLIPHandler:
 			batch_texts = texts[i:i + batch_size]
 			tokens = self.tokenizer(batch_texts).to(self.device)
 
-			with torch.autocast("cuda"):
+			autocast_ctx = torch.autocast("cuda") if self.device == "cuda" and torch.cuda.is_available() else nullcontext()
+			with autocast_ctx:
 				batch_features = self.model.encode_text(tokens)
 			features.append(batch_features.cpu().numpy())
 
